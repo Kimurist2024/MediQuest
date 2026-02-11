@@ -2,49 +2,74 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MediQuest - 記録</title>
+    <title>MediQuest - Quest Board</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f2f5; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
-        h1 { color: #333; text-align: center; }
-        button { width: 100%; padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button:hover { background-color: #45a049; }
-        p { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        body { font-family: 'Courier New', Courier, monospace; background-color: #1a1a1a; color: #eee; padding: 20px; }
+        .card-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+        .card { background: #333; border: 2px solid #555; border-radius: 10px; overflow: hidden; text-align: center; position: relative; }
+        
+        /* 画像エリア */
+        .enemy-img-container { height: 120px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .enemy-img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .hp-bar-bg { background: #555; height: 10px; width: 100%; }
+        .hp-bar-fill { background: #ff5252; height: 100%; transition: width 0.5s; }
+        .clear-bar { background: #ffd700 !important; } /* 100%で金色に */
+        
+        .card-info { padding: 10px; }
+        .clear-badge { position: absolute; top: 5px; right: 5px; background: gold; color: black; padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 3px; }
+        
+        /* 入力フォームの簡易スタイル */
+        .form-section { background: #222; padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #444; }
+        input, select { margin: 5px; padding: 5px; }
+        button { background: #e74c3c; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>⚔️ クエスト記録 ⚔️</h1>
+    <h1>🔥 MediQuest - 勇者 {{ user.username }} の冒険 🔥</h1>
 
-    <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-        <h2 style="color: #1976d2; margin: 0;">Lv. {{ level }}</h2>
-        <p>総学習時間: <strong>{{ total_minutes }}</strong> 分</p>
-        <p style="font-size: 0.9em; color: #666;">次のレベルまであと {{ next_level_exp }} 分！</p>
+    <div class="form-section">
+        <h3>📝 クエストを記録する</h3>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">経験値を獲得！</button>
+        </form>
     </div>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">記録を保存する</button>
-    </form>
-</div>
 
-<h3>📊 科目別進捗 (ボスへのダメージ)</h3>
-    <div style="margin-bottom: 20px;">
+    <hr>
+
+    <h3>👾 出現中のモンスター (科目一覧)</h3>
+    <div class="card-container">
         {% for status in subject_status_list %}
-        <div style="margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <strong>{{ status.name }}</strong>
-                <span>{{ status.video_progress }}% ({{ status.current_val }} / {{ status.total_val }} 本)</span>
+        <div class="card">
+            {% if status.video_progress >= 100 %}
+                <div class="clear-badge">🏆 DEFEATED</div>
+            {% endif %}
+
+            <div class="enemy-img-container">
+                {% if status.image_url %}
+                    <img src="{{ status.image_url }}" class="enemy-img">
+                {% else %}
+                    <div style="font-size: 50px;">👾</div>
+                {% endif %}
             </div>
-            <div style="background-color: #ddd; border-radius: 10px; overflow: hidden;">
-                <div style="background-color: #4CAF50; width: {{ status.video_progress }}%; height: 10px;"></div>
+
+            <div class="hp-bar-bg">
+                <div class="hp-bar-fill {% if status.video_progress >= 100 %}clear-bar{% endif %}" style="width: {{ status.video_progress }}%;"></div>
+            </div>
+
+            <div class="card-info">
+                <strong>{{ status.name }}</strong><br>
+                <small>Progress: {{ status.video_progress }}%</small><br>
+                <small>({{ status.current_val }} / {{ status.total_val }} 本)</small>
             </div>
         </div>
         {% endfor %}
     </div>
+
+    <p style="margin-top: 50px;"><a href="{% url 'logout' %}" style="color: #888;">冒険を一時中断する（ログアウト）</a></p>
 
 </body>
 </html>
