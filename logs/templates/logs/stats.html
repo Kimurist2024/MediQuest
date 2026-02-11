@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediQuest - Stats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        :root {
+            --bg-page: #f5f5f7;
+            --bg-card: #ffffff;
+            --bg-input: #f5f5f7;
+            --border: #e5e5ea;
+            --border-hover: #d1d1d6;
+            --text-primary: #1c1c1e;
+            --text-secondary: #6e6e73;
+            --text-muted: #aeaeb2;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.10);
+            --gold: #e6a817;
+            --success: #34c759;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+            background: var(--bg-page); color: var(--text-primary);
+            min-height: 100vh; -webkit-font-smoothing: antialiased;
+        }
+
+        /* NAV (same as record) */
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; height: 56px;
+            background: rgba(255,255,255,0.8); backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-left { display: flex; align-items: center; gap: 24px; }
+        .nav-logo { font-size: 15px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-link {
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            color: var(--text-secondary); text-decoration: none;
+            padding: 6px 12px; border-radius: 6px; transition: all 0.15s;
+        }
+        .nav-link:hover { background: var(--bg-input); color: var(--text-primary); }
+        .nav-link.active { background: var(--accent-glow); color: var(--accent); }
+        .nav-logout {
+            font-family: inherit; font-size: 12px; font-weight: 500;
+            color: var(--text-muted); background: none; border: 1px solid var(--border);
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+        }
+        .nav-logout:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
+
+        /* Summary cards */
+        .summary-row {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; margin-bottom: 24px;
+        }
+        .summary-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm);
+        }
+        .summary-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+        .summary-value { font-size: 28px; font-weight: 900; line-height: 1.1; }
+        .summary-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .c-accent { color: var(--accent); }
+        .c-gold { color: var(--gold); }
+        .c-success { color: var(--success); }
+
+        /* Chart cards */
+        .chart-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+        .chart-title {
+            font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            color: var(--text-muted); text-transform: uppercase;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .chart-wrap { position: relative; width: 100%; }
+        .chart-wrap.tall { height: 500px; }
+
+        .footer { text-align: center; padding: 32px 0 16px; font-size: 11px; color: var(--text-muted); }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px 12px 40px; }
+            .summary-row { grid-template-columns: 1fr 1fr; }
+            .chart-wrap.tall { height: 400px; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav">
+        <div class="nav-left">
+            <div class="nav-logo">MEDIQUEST</div>
+            <div class="nav-links">
+                <a href="{% url 'record_quest' %}" class="nav-link">Quest</a>
+                <a href="{% url 'stats' %}" class="nav-link active">Stats</a>
+            </div>
+        </div>
+        <form method="post" action="{% url 'logout' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="nav-logout">Log out</button>
+        </form>
+    </nav>
+
+    <div class="container">
+
+        <!-- Summary -->
+        <div class="summary-row">
+            <div class="summary-card">
+                <div class="summary-label">Total Solved</div>
+                <div class="summary-value c-accent">{{ total_solved }}</div>
+                <div class="summary-sub">/ {{ total_questions }} 問</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Level</div>
+                <div class="summary-value c-gold">Lv.{{ total_level }}</div>
+                <div class="summary-sub">{{ total_xp }} / {{ next_level_xp }} XP</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">Overall Progress</div>
+                <div class="summary-value c-success">
+                    {% widthratio total_solved total_questions 100 %}%
+                </div>
+                <div class="summary-sub">全科目合算</div>
+            </div>
+        </div>
+
+        <!-- 累計問題数の推移 -->
+        <div class="chart-card">
+            <div class="chart-title">Cumulative Problems Solved</div>
+            <div class="chart-wrap">
+                <canvas id="cumulativeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 日別の記録 -->
+        <div class="chart-card">
+            <div class="chart-title">Daily Activity</div>
+            <div class="chart-wrap">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 科目別の進捗 -->
+        <div class="chart-card">
+            <div class="chart-title">Progress by Subject</div>
+            <div class="chart-wrap tall">
+                <canvas id="subjectChart"></canvas>
+            </div>
+        </div>
+
+        <div class="footer">MediQuest &copy; 2026</div>
+    </div>
+
+    <script>
+        const accent = '#6c5ce7';
+        const accentLight = '#a29bfe';
+        const gold = '#e6a817';
+        const success = '#34c759';
+        const muted = '#aeaeb2';
+        const border = '#e5e5ea';
+
+        Chart.defaults.font.family = "'Inter', 'Noto Sans JP', sans-serif";
+        Chart.defaults.color = '#6e6e73';
+
+        // 累計グラフ
+        new Chart(document.getElementById('cumulativeChart'), {
+            type: 'line',
+            data: {
+                labels: {{ daily_labels|safe }},
+                datasets: [{
+                    label: '累計問題数',
+                    data: {{ cumulative_solves|safe }},
+                    borderColor: accent,
+                    backgroundColor: 'rgba(108,92,231,0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: accent,
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: border } },
+                    y: { grid: { color: border }, beginAtZero: true }
+                }
+            }
+        });
+
+        // 日別グラフ
+        new Chart(document.getElementById('dailyChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ daily_labels|safe }},
+                datasets: [
+                    {
+                        label: '問題数',
+                        data: {{ daily_solves|safe }},
+                        backgroundColor: accent,
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                    },
+                    {
+                        label: '動画(本)',
+                        data: {{ daily_videos|safe }},
+                        backgroundColor: accentLight,
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: border }, beginAtZero: true }
+                }
+            }
+        });
+
+        // 科目別グラフ（横棒）
+        new Chart(document.getElementById('subjectChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ subject_labels|safe }},
+                datasets: [
+                    {
+                        label: '解いた問題',
+                        data: {{ subject_solved|safe }},
+                        backgroundColor: accent,
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                    },
+                    {
+                        label: '総問題数',
+                        data: {{ subject_totals|safe }},
+                        backgroundColor: border,
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } }
+                },
+                scales: {
+                    x: { grid: { color: border }, beginAtZero: true },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

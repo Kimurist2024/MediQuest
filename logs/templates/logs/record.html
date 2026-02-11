@@ -2,74 +2,335 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>MediQuest - Quest Board</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediQuest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Courier New', Courier, monospace; background-color: #1a1a1a; color: #eee; padding: 20px; }
-        .card-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
-        .card { background: #333; border: 2px solid #555; border-radius: 10px; overflow: hidden; text-align: center; position: relative; }
-        
-        /* 画像エリア */
-        .enemy-img-container { height: 120px; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .enemy-img { width: 100%; height: 100%; object-fit: contain; }
-        
-        .hp-bar-bg { background: #555; height: 10px; width: 100%; }
-        .hp-bar-fill { background: #ff5252; height: 100%; transition: width 0.5s; }
-        .clear-bar { background: #ffd700 !important; } /* 100%で金色に */
-        
-        .card-info { padding: 10px; }
-        .clear-badge { position: absolute; top: 5px; right: 5px; background: gold; color: black; padding: 2px 5px; font-size: 10px; font-weight: bold; border-radius: 3px; }
-        
-        /* 入力フォームの簡易スタイル */
-        .form-section { background: #222; padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #444; }
-        input, select { margin: 5px; padding: 5px; }
-        button { background: #e74c3c; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        :root {
+            --bg: #ffffff;
+            --bg-page: #f5f5f7;
+            --bg-card: #ffffff;
+            --bg-card-hover: #fafafe;
+            --bg-input: #f5f5f7;
+            --border: #e5e5ea;
+            --border-hover: #d1d1d6;
+            --text-primary: #1c1c1e;
+            --text-secondary: #6e6e73;
+            --text-muted: #aeaeb2;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.10);
+            --gold: #e6a817;
+            --gold-bg: rgba(230, 168, 23, 0.08);
+            --hp-red: #ef4444;
+            --hp-orange: #f97316;
+            --success: #34c759;
+            --success-bg: rgba(52, 199, 89, 0.08);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', -apple-system, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===== NAV ===== */
+        .nav {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; height: 56px;
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-left { display: flex; align-items: center; gap: 24px; }
+        .nav-logo {
+            font-size: 15px; font-weight: 800; letter-spacing: 2px; color: var(--accent);
+        }
+        .nav-links { display: flex; gap: 4px; }
+        .nav-link {
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            color: var(--text-secondary); text-decoration: none;
+            padding: 6px 12px; border-radius: 6px; transition: all 0.15s;
+        }
+        .nav-link:hover { background: var(--bg-input); color: var(--text-primary); }
+        .nav-link.active { background: var(--accent-glow); color: var(--accent); }
+        .nav-logout {
+            font-family: inherit; font-size: 12px; font-weight: 500;
+            color: var(--text-muted); background: none; border: 1px solid var(--border);
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+        }
+        .nav-logout:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+
+        .container { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
+
+        /* ===== HUD ===== */
+        .hud {
+            display: grid; grid-template-columns: auto 1fr auto; gap: 20px;
+            align-items: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+        .hud-avatar {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border-radius: var(--radius-sm);
+            display: grid; place-items: center;
+            font-size: 22px;
+        }
+        .hud-name { font-size: 16px; font-weight: 700; margin-bottom: 1px; }
+        .hud-class { font-size: 12px; color: var(--text-secondary); }
+        .hud-stats { text-align: right; }
+        .hud-level { font-size: 26px; font-weight: 900; color: var(--gold); line-height: 1; }
+        .hud-level small { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+
+        .xp-row {
+            display: flex; align-items: center; gap: 12px;
+            margin-top: 14px; padding-top: 14px;
+            border-top: 1px solid var(--border);
+            grid-column: 1 / -1;
+        }
+        .xp-label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; }
+        .xp-bar { flex: 1; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
+        .xp-bar-fill {
+            height: 100%; border-radius: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .xp-nums { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+
+        /* ===== NOTIFICATIONS ===== */
+        .notif-area { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+        .notif {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 18px; border-radius: var(--radius-sm);
+            font-size: 14px; font-weight: 600;
+            animation: notifIn 0.3s ease-out, notifOut 0.4s ease-in 5s forwards;
+        }
+        .notif-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: grid; place-items: center; font-size: 16px; flex-shrink: 0;
+        }
+        .notif.success { background: var(--success-bg); color: #15803d; }
+        .notif.success .notif-icon { background: rgba(52,199,89,0.12); }
+        .notif.warning { background: var(--gold-bg); color: #92610a; }
+        .notif.warning .notif-icon { background: rgba(230,168,23,0.12); }
+        .notif.info { background: var(--accent-glow); color: var(--accent); }
+        .notif.info .notif-icon { background: rgba(108,92,231,0.1); }
+
+        @keyframes notifIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes notifOut { to { opacity: 0; height: 0; padding: 0; margin: 0; overflow: hidden; } }
+
+        /* ===== 2-COLUMN ===== */
+        .two-col { display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start; }
+        @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+        /* ===== FORM ===== */
+        .form-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow-sm); position: sticky; top: 72px;
+        }
+        .card-header {
+            font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            color: var(--text-muted); text-transform: uppercase;
+            margin-bottom: 20px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .form-card form p { margin-bottom: 16px; }
+        .form-card label {
+            display: block; font-size: 12px; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 6px;
+        }
+        .form-card select,
+        .form-card input[type="number"],
+        .form-card input[type="text"] {
+            width: 100%; padding: 10px 12px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); color: var(--text-primary);
+            font-family: inherit; font-size: 14px;
+            transition: border-color 0.15s, box-shadow 0.15s; margin: 0;
+        }
+        .form-card select:focus,
+        .form-card input:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .btn-submit {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 12px;
+            background: var(--accent); color: #fff;
+            font-family: inherit; font-size: 14px; font-weight: 700;
+            border: none; border-radius: var(--radius-sm); cursor: pointer;
+            transition: all 0.15s; box-shadow: 0 2px 8px var(--accent-glow); margin-top: 4px;
+        }
+        .btn-submit:hover { background: #7c6cf0; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit svg { width: 16px; height: 16px; }
+
+        /* ===== MONSTER GRID ===== */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+        .m-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+            transition: all 0.2s; position: relative; box-shadow: var(--shadow-sm);
+        }
+        .m-card:hover { border-color: var(--border-hover); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .m-card.clear { border-color: rgba(230,168,23,0.3); }
+        .m-card.clear:hover { border-color: rgba(230,168,23,0.5); }
+
+        .m-badge {
+            position: absolute; top: 6px; right: 6px; z-index: 2;
+            font-size: 9px; font-weight: 800; letter-spacing: 1px;
+            color: var(--gold); background: var(--gold-bg);
+            border: 1px solid rgba(230,168,23,0.2);
+            padding: 2px 8px; border-radius: 4px;
+        }
+        .m-visual {
+            height: 88px;
+            background: linear-gradient(180deg, var(--bg-input) 0%, var(--bg-card) 100%);
+            display: grid; place-items: center; position: relative; overflow: hidden;
+        }
+        .m-card.clear .m-visual { background: linear-gradient(180deg, #fdf8ec 0%, var(--bg-card) 100%); }
+        .m-emoji { font-size: 38px; }
+        .m-card.clear .m-emoji { filter: saturate(0.7); }
+        .m-img { width: 100%; height: 100%; object-fit: contain; }
+
+        .m-hp { padding: 0 10px; margin-top: 2px; }
+        .m-hp-bg { height: 4px; background: var(--bg-input); border-radius: 2px; overflow: hidden; }
+        .m-hp-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+        .m-hp-fill.normal { background: linear-gradient(90deg, var(--hp-red), var(--hp-orange)); }
+        .m-hp-fill.done { background: linear-gradient(90deg, #c49b1a, var(--gold)); }
+
+        .m-info { padding: 10px; text-align: center; }
+        .m-name { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+        .m-card.clear .m-name { color: #92610a; }
+        .m-pct { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+        .m-detail { font-size: 10px; color: var(--text-muted); }
+
+        .footer { text-align: center; padding: 32px 0 16px; font-size: 11px; color: var(--text-muted); }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px 12px 40px; }
+            .hud { grid-template-columns: auto 1fr; gap: 14px; padding: 16px; }
+            .hud-stats { grid-column: 1 / -1; text-align: left; display: flex; align-items: baseline; gap: 8px; }
+            .hud-level { font-size: 22px; }
+            .form-card { position: static; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+            .m-visual { height: 72px; }
+            .nav-links { display: none; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>🔥 MediQuest - 勇者 {{ user.username }} の冒険 🔥</h1>
-
-    <div class="form-section">
-        <h3>📝 クエストを記録する</h3>
-        <form method="post">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">経験値を獲得！</button>
-        </form>
-    </div>
-
-    <hr>
-
-    <h3>👾 出現中のモンスター (科目一覧)</h3>
-    <div class="card-container">
-        {% for status in subject_status_list %}
-        <div class="card">
-            {% if status.video_progress >= 100 %}
-                <div class="clear-badge">🏆 DEFEATED</div>
-            {% endif %}
-
-            <div class="enemy-img-container">
-                {% if status.image_url %}
-                    <img src="{{ status.image_url }}" class="enemy-img">
-                {% else %}
-                    <div style="font-size: 50px;">👾</div>
-                {% endif %}
-            </div>
-
-            <div class="hp-bar-bg">
-                <div class="hp-bar-fill {% if status.video_progress >= 100 %}clear-bar{% endif %}" style="width: {{ status.video_progress }}%;"></div>
-            </div>
-
-            <div class="card-info">
-                <strong>{{ status.name }}</strong><br>
-                <small>Progress: {{ status.video_progress }}%</small><br>
-                <small>({{ status.current_val }} / {{ status.total_val }} 本)</small>
+    <nav class="nav">
+        <div class="nav-left">
+            <div class="nav-logo">MEDIQUEST</div>
+            <div class="nav-links">
+                <a href="{% url 'record_quest' %}" class="nav-link active">Quest</a>
+                <a href="{% url 'stats' %}" class="nav-link">Stats</a>
             </div>
         </div>
-        {% endfor %}
-    </div>
+        <form method="post" action="{% url 'logout' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="nav-logout">Log out</button>
+        </form>
+    </nav>
 
-    <p style="margin-top: 50px;"><a href="{% url 'logout' %}" style="color: #888;">冒険を一時中断する（ログアウト）</a></p>
+    <div class="container">
+
+        <div class="hud">
+            <div class="hud-avatar">&#9876;&#65039;</div>
+            <div>
+                <div class="hud-name">{{ user.username }}</div>
+                <div class="hud-class">Medical Adventurer</div>
+            </div>
+            <div class="hud-stats">
+                <div class="hud-level"><small>Lv.</small>{{ total_level }}</div>
+            </div>
+            <div class="xp-row">
+                <div class="xp-label">EXP</div>
+                <div class="xp-bar">
+                    <div class="xp-bar-fill" style="width: {% widthratio total_xp next_level_xp 100 %}%;"></div>
+                </div>
+                <div class="xp-nums">{{ total_xp }} / {{ next_level_xp }}</div>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="notif-area">
+            {% for message in messages %}
+            <div class="notif {{ message.tags }}">
+                <div class="notif-icon">
+                    {% if 'success' in message.tags %}&#127919;{% elif 'warning' in message.tags %}&#9876;&#65039;{% else %}&#127942;{% endif %}
+                </div>
+                <div>{{ message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="two-col">
+            <div class="form-card">
+                <div class="card-header">Quest Log</div>
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn-submit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        Record Quest
+                    </button>
+                </form>
+            </div>
+
+            <div>
+                <div class="card-header">Monsters &mdash; {{ subject_status_list|length }} subjects</div>
+                <div class="grid">
+                    {% for status in subject_status_list %}
+                    <div class="m-card {% if status.video_progress >= 100 %}clear{% endif %}">
+                        {% if status.video_progress >= 100 %}
+                            <div class="m-badge">CLEAR</div>
+                        {% endif %}
+                        <div class="m-visual">
+                            {% if status.image_url %}
+                                <img src="{{ status.image_url }}" class="m-img">
+                            {% else %}
+                                <div class="m-emoji">&#128126;</div>
+                            {% endif %}
+                        </div>
+                        <div class="m-hp">
+                            <div class="m-hp-bg">
+                                <div class="m-hp-fill {% if status.video_progress >= 100 %}done{% else %}normal{% endif %}" style="width: {{ status.video_progress }}%;"></div>
+                            </div>
+                        </div>
+                        <div class="m-info">
+                            <div class="m-name">{{ status.name }}</div>
+                            <div class="m-pct">{{ status.video_progress }}%</div>
+                            <div class="m-detail">{{ status.current_val }} / {{ status.total_val }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">MediQuest &copy; 2026</div>
+    </div>
 
 </body>
 </html>
